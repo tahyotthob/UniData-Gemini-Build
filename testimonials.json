@@ -1,0 +1,31 @@
+
+[
+  {
+    "name": "Chidi O.",
+    "role": "Final Year Student",
+    "institution": "UNILAG",
+    "content": "Unidata saved me 3 weeks of manual work. I got 200 verified responses for my Final Year Project in just 48 hours.",
+    "color": "bg-blue-200"
+  },
+  {
+    "name": "Dr. Ibrahim A.",
+    "role": "Senior Lecturer",
+    "institution": "University of Ibadan",
+    "content": "As a lecturer, I recommend this to my students. The quality scoring tool ensures their methodology is sound before they even start.",
+    "color": "bg-green-200"
+  },
+  {
+    "name": "Favour E.",
+    "role": "Verified Respondent",
+    "institution": "Lagos State",
+    "content": "Taking surveys on Unidata is easy and rewarding. I actually enjoy contributing to local research while earning extra cash.",
+    "color": "bg-yellow-200"
+  },
+  {
+    "name": "Sola W.",
+    "role": "MSc Researcher",
+    "institution": "OAU Ife",
+    "content": "The AI question generator is a game changer. It helped me refine my survey variables into clear, measurable questions for my thesis.",
+    "color": "bg-purple-200"
+  }
+]
