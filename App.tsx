@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
 import Features from './components/Features';
+import WhyUs from './components/WhyUs';
 import AiDemo from './components/AiDemo';
 import Waitlist from './components/Waitlist';
 import Footer from './components/Footer';
@@ -44,6 +45,7 @@ const App: React.FC = () => {
         <HowItWorks />
         <AiDemo />
         <Features />
+        <WhyUs />
 
         {/* Testimonial Section */}
         <section className="py-24 bg-white">

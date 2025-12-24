@@ -5,13 +5,32 @@ const Waitlist: React.FC = () => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('student');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  const validateEmail = (email: string) => {
+    return String(email)
+      .toLowerCase()
+      .match(
+        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+      );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      setSubmitted(true);
-      // In a real app, send to backend
+    setError('');
+
+    if (!email) {
+      setError('Email is required');
+      return;
     }
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setSubmitted(true);
+    // In a real app, send to backend
   };
 
   return (
@@ -50,17 +69,26 @@ const Waitlist: React.FC = () => {
                   Respondent
                 </button>
               </div>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your university email"
-                className="w-full px-6 py-4 rounded-xl border-2 border-gray-100 focus:border-unidata-blue outline-none text-lg"
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                  }}
+                  placeholder={role === 'student' ? "Enter your university email" : "Enter your email address"}
+                  className={`w-full px-6 py-4 rounded-xl border-2 outline-none text-lg transition-all ${error ? 'border-red-500 bg-red-50' : 'border-gray-100 focus:border-unidata-blue'}`}
+                />
+                {error && (
+                  <p className="text-red-500 text-xs mt-1 text-left ml-2 font-medium animate-pulse">
+                    {error}
+                  </p>
+                )}
+              </div>
               <button
                 type="submit"
-                className="w-full bg-unidata-blue text-white px-8 py-4 rounded-xl font-bold hover:bg-unidata-darkBlue transition-all shadow-lg"
+                className="w-full bg-unidata-blue text-white px-8 py-4 rounded-xl font-bold hover:bg-unidata-darkBlue transition-all shadow-lg active:scale-95"
               >
                 Get Early Access
               </button>
