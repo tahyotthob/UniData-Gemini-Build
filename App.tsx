@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
@@ -10,16 +10,38 @@ import Waitlist from './components/Waitlist';
 import Footer from './components/Footer';
 import { Testimonial } from './types';
 
+const TESTIMONIALS_DATA: Testimonial[] = [
+  {
+    "name": "Chidi O.",
+    "role": "Final Year Student",
+    "institution": "UNILAG",
+    "content": "Unidata saved me 3 weeks of manual work. I got 200 verified responses for my Final Year Project in just 48 hours.",
+    "color": "bg-blue-200"
+  },
+  {
+    "name": "Dr. Ibrahim A.",
+    "role": "Senior Lecturer",
+    "institution": "University of Ibadan",
+    "content": "As a lecturer, I recommend this to my students. The quality scoring tool ensures their methodology is sound before they even start.",
+    "color": "bg-green-200"
+  },
+  {
+    "name": "Favour E.",
+    "role": "Verified Respondent",
+    "institution": "Lagos State",
+    "content": "Taking surveys on Unidata is easy and rewarding. I actually enjoy contributing to local research while earning extra cash.",
+    "color": "bg-yellow-200"
+  },
+  {
+    "name": "Sola W.",
+    "role": "MSc Researcher",
+    "institution": "OAU Ife",
+    "content": "The AI question generator is a game changer. It helped me refine my survey variables into clear, measurable questions for my thesis.",
+    "color": "bg-purple-200"
+  }
+];
+
 const App: React.FC = () => {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-
-  useEffect(() => {
-    fetch('./testimonials.json')
-      .then(response => response.json())
-      .then(data => setTestimonials(data))
-      .catch(error => console.error('Error loading testimonials:', error));
-  }, []);
-
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -55,7 +77,7 @@ const App: React.FC = () => {
               <p className="text-gray-500">Real impact stories from the Nigerian academic community.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {testimonials.map((t, index) => (
+              {TESTIMONIALS_DATA.map((t, index) => (
                 <div key={index} className="p-8 rounded-2xl bg-gray-50 border border-gray-100 flex flex-col justify-between hover:shadow-lg transition-all">
                   <p className="italic text-gray-600 mb-6">"{t.content}"</p>
                   <div className="mt-auto not-italic font-bold text-unidata-blue flex items-center">
