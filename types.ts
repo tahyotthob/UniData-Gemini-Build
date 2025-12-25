@@ -3,6 +3,7 @@ export interface SurveyQuestion {
   question: string;
   type: 'multiple_choice' | 'short_answer' | 'rating';
   options?: string[];
+  rationale?: string;
 }
 
 export interface UserRole {

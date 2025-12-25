@@ -2,23 +2,126 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SurveyQuestion } from "./types";
 
-export const generateSurveyQuestions = async (
-  topic: string,
-  keywords?: string,
-  demographics?: string
-): Promise<SurveyQuestion[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
+/**
+ * Acts as a Research Consultant to extract variables and demographics from a topic or proposal.
+ */
+export const analyzeResearchContext = async (text: string): Promise<{ variables: string, demographics: string }> => {
   try {
-    let prompt = `Generate 3 high-quality survey questions for a research project on: "${topic}".`;
-    if (keywords) prompt += ` Ensure the questions touch on these key themes: ${keywords}.`;
-    if (demographics) prompt += ` The target audience is: ${demographics}.`;
-    prompt += ` Optimized for Nigerian academic standards.`;
+    const prompt = `You are a Senior Academic Research Consultant specializing in Nigerian higher education and market research. 
+    Analyze the following research objective or proposal snippet and suggest:
+    1. A list of 3-5 key variables or themes (comma-separated).
+    2. A concise description of the target demographics (who should answer this?).
+
+    Research Text: "${text}"`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
+        systemInstruction: "You are a helpful academic consultant. Be precise and relevant to the Nigerian context.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            variables: { type: Type.STRING, description: "Key variables or themes extracted." },
+            demographics: { type: Type.STRING, description: "Target audience description." }
+          },
+          required: ["variables", "demographics"]
+        }
+      }
+    });
+
+    return JSON.parse(response.text || '{"variables":"", "demographics":""}');
+  } catch (error) {
+    console.error("Context Analysis Error:", error);
+    return { variables: "", demographics: "" };
+  }
+};
+
+/**
+ * Generates initial survey questions with rationale.
+ */
+export const generateSurveyQuestions = async (
+  topic: string,
+  keywords?: string,
+  demographics?: string,
+  preferredTypes?: string[],
+  proposalText?: string
+): Promise<SurveyQuestion[]> => {
+  try {
+    const prompt = `Act as a Senior Research Consultant and Academic Advisor. 
+    A researcher is working on: "${topic}".
+    ${proposalText ? `They have uploaded a proposal: "${proposalText.substring(0, 1500)}..."` : ''}
+    Key Themes to measure: ${keywords || 'general study variables'}
+    Target Population: ${demographics || 'general Nigerian population'}
+    Requested Question Formats: ${preferredTypes?.join(', ') || 'multiple_choice, short_answer'}
+    
+    Task:
+    1. Generate 4 high-quality survey questions that align with Nigerian academic standards.
+    2. For each question, provide a conversational "rationale" explaining why this question is scientifically valuable for their specific topic.
+    3. Ensure the questions are clear, non-leading, and easy for the target audience to understand.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are a guiding research expert. Your tone is supportive, expert, and academic yet accessible.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              question: { type: Type.STRING },
+              type: { 
+                type: Type.STRING, 
+                description: "Must be one of: multiple_choice, short_answer, rating" 
+              },
+              options: { 
+                type: Type.ARRAY, 
+                items: { type: Type.STRING },
+                description: "Provide options if type is multiple_choice."
+              },
+              rationale: { 
+                type: Type.STRING, 
+                description: "A helpful explanation of the research value of this specific question." 
+              }
+            },
+            required: ["question", "type", "rationale"]
+          }
+        }
+      }
+    });
+
+    return JSON.parse(response.text || "[]");
+  } catch (error) {
+    console.error("Survey Generation Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Refines existing questions based on user feedback.
+ */
+export const refineSurveyQuestions = async (
+  previousQuestions: SurveyQuestion[],
+  feedback: string
+): Promise<SurveyQuestion[]> => {
+  try {
+    const prompt = `I am a researcher and I have these draft questions: ${JSON.stringify(previousQuestions)}
+    
+    My feedback/request for refinement is: "${feedback}"
+    
+    As my Research Consultant, please update the survey questions based on this feedback. 
+    Maintain the high academic standard and provide updated rationales.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: "You are an iterative research partner. Listen to the feedback and improve the methodology accordingly.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -27,45 +130,18 @@ export const generateSurveyQuestions = async (
             properties: {
               question: { type: Type.STRING },
               type: { type: Type.STRING },
-              options: { type: Type.ARRAY, items: { type: Type.STRING } }
+              options: { type: Type.ARRAY, items: { type: Type.STRING } },
+              rationale: { type: Type.STRING }
             },
-            required: ["question", "type"]
+            required: ["question", "type", "rationale"]
           }
         }
       }
     });
 
-    const text = response.text || "[]";
-    return JSON.parse(text);
+    return JSON.parse(response.text || "[]");
   } catch (error) {
-    console.error("Error generating questions:", error);
+    console.error("Refinement Error:", error);
     throw error;
-  }
-};
-
-/**
- * Generates a personalized welcome email draft to show the user 
- * or to send via your email provider.
- */
-export const generateWelcomeDraft = async (role: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-  
-  const roleContext = role === 'student' 
-    ? 'a Researcher (Student/Academic) looking for verified survey respondents' 
-    : 'a Respondent looking to earn rewards by participating in research';
-
-  const prompt = `Write a short, exciting welcome email (max 100 words) for a new user joining Unidata. 
-  The user is ${roleContext}. 
-  Mention that Unidata is Nigeria's first AI-driven research ecosystem. 
-  Use a professional yet friendly Nigerian tone (e.g., using words like 'Welcome on board').`;
-
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-    });
-    return response.text || "Welcome to Unidata!";
-  } catch (error) {
-    return "Welcome to Unidata! We're excited to have you on board.";
   }
 };

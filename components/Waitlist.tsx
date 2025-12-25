@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { subscribeToWaitlist } from '../apiService';
-import { generateWelcomeDraft } from '../geminiService';
 
 const Waitlist: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -9,14 +8,11 @@ const Waitlist: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [welcomeMessage, setWelcomeMessage] = useState('');
 
   useEffect(() => {
     const isJoined = localStorage.getItem('unidata_joined');
-    const storedWelcome = localStorage.getItem('unidata_welcome');
     if (isJoined) {
       setSubmitted(true);
-      if (storedWelcome) setWelcomeMessage(storedWelcome);
     }
   }, []);
 
@@ -42,16 +38,8 @@ const Waitlist: React.FC = () => {
 
     setLoading(true);
     try {
-      // 1. Send data to Supabase
       await subscribeToWaitlist(email, role);
-      
-      // 2. Generate a personalized welcome message draft using Gemini
-      const draft = await generateWelcomeDraft(role);
-      
-      // 3. Update UI and persist
-      setWelcomeMessage(draft);
       localStorage.setItem('unidata_joined', 'true');
-      localStorage.setItem('unidata_welcome', draft);
       setSubmitted(true);
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.');
@@ -69,34 +57,24 @@ const Waitlist: React.FC = () => {
           <p className="text-gray-600 mb-10">Get early access to our private beta and start collecting smarter data today.</p>
           
           {submitted ? (
-            <div className="py-6 text-left">
-              <div className="w-16 h-16 bg-green-100 text-unidata-green rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="py-12 text-center">
+              <div className="w-20 h-20 bg-green-100 text-unidata-green rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-unidata-blue text-center mb-4">You're on the list!</h3>
+              <h3 className="text-2xl font-bold text-unidata-blue mb-2">You're on the list!</h3>
+              <p className="text-gray-500 mb-8">Welcome on board. We'll reach out to you as soon as the private beta opens.</p>
               
-              <div className="bg-unidata-lightGreen/50 p-6 rounded-2xl border border-unidata-green/20">
-                <p className="text-xs font-bold text-unidata-green uppercase tracking-widest mb-2">Personalized Welcome Note</p>
-                <p className="text-gray-700 leading-relaxed italic">
-                  {welcomeMessage}
-                </p>
-              </div>
-
-              <div className="text-center mt-8">
-                <button 
-                  onClick={() => {
-                    localStorage.removeItem('unidata_joined');
-                    localStorage.removeItem('unidata_welcome');
-                    setSubmitted(false);
-                    setWelcomeMessage('');
-                  }}
-                  className="text-sm text-gray-400 hover:text-unidata-blue underline"
-                >
-                  Join with a different email
-                </button>
-              </div>
+              <button 
+                onClick={() => {
+                  localStorage.removeItem('unidata_joined');
+                  setSubmitted(false);
+                }}
+                className="text-sm text-gray-400 hover:text-unidata-blue underline"
+              >
+                Join with a different email
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
@@ -143,12 +121,12 @@ const Waitlist: React.FC = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Connecting to Database...
+                    Saving to Waitlist...
                   </>
                 ) : 'Get Early Access'}
               </button>
               <p className="text-xs text-gray-400 mt-4">
-                Registration involves verification via our secure data pipeline.
+                Your data is secure and handled according to Nigerian privacy laws.
               </p>
             </form>
           )}
