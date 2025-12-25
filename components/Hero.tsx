@@ -33,9 +33,9 @@ const Hero: React.FC = () => {
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-unidata-green opacity-10 rounded-full blur-3xl"></div>
             <div className="bg-white rounded-3xl shadow-2xl p-6 relative z-10 border border-gray-100">
               <img 
-                src="https://picsum.photos/seed/research/800/600" 
+                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200" 
                 alt="Research Platform" 
-                className="rounded-2xl w-full h-auto object-cover"
+                className="rounded-2xl w-full h-[400px] object-cover"
               />
               <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl border border-gray-50 flex items-center space-x-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-unidata-green">
