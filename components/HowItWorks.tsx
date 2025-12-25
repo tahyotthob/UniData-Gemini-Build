@@ -68,9 +68,12 @@ const HowItWorks: React.FC = () => {
               <p className="text-sm text-gray-500">Launch your first AI-assisted survey in minutes.</p>
             </div>
           </div>
-          <button className="bg-unidata-blue text-white px-8 py-3 rounded-xl font-bold hover:bg-unidata-darkBlue transition-colors shadow-lg">
-            Create Free Account
-          </button>
+          <a 
+            href="#waitlist" 
+            className="bg-unidata-blue text-white px-8 py-3 rounded-xl font-bold hover:bg-unidata-darkBlue transition-all shadow-lg active:scale-95 inline-block text-center"
+          >
+            Join the Waitlist
+          </a>
         </div>
       </div>
     </section>

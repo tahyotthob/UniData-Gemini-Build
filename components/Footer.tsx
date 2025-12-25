@@ -1,7 +1,11 @@
 
 import React from 'react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onAdminOpen?: () => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onAdminOpen }) => {
   return (
     <footer className="bg-gray-900 text-white py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,24 +34,26 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-lg font-bold mb-6">Product</h4>
             <ul className="space-y-4 text-gray-400">
-              <li><a href="#" className="hover:text-white transition-colors">AI Generator</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Marketplace</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
+              <li><a href="#ai-demo" className="hover:text-white transition-colors">AI Generator</a></li>
+              <li><a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
+              <li><button onClick={onAdminOpen} className="hover:text-unidata-green transition-colors text-left">Admin View</button></li>
             </ul>
           </div>
           <div>
             <h4 className="text-lg font-bold mb-6">Resources</h4>
             <ul className="space-y-4 text-gray-400">
               <li><a href="#" className="hover:text-white transition-colors">Research Guide</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Respondent Hub</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
             </ul>
           </div>
         </div>
-        <div className="pt-12 border-t border-gray-800 text-center text-gray-500 text-sm">
+        <div className="pt-12 border-t border-gray-800 text-center text-gray-500 text-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <p>&copy; {new Date().getFullYear()} Unidata Technologies. All rights reserved.</p>
+          <div className="flex gap-4">
+            <span className="text-[10px] bg-gray-800 px-2 py-1 rounded">NNDP Compliant</span>
+            <span className="text-[10px] bg-gray-800 px-2 py-1 rounded">SSL Secure</span>
+          </div>
         </div>
       </div>
     </footer>

@@ -6,9 +6,22 @@ export interface SurveyQuestion {
   rationale?: string;
 }
 
-export interface UserRole {
-  id: 'student' | 'respondent';
-  label: string;
+export type UserRole = 'researcher' | 'respondent';
+
+export interface UserProfile {
+  id?: string;
+  email: string;
+  role: UserRole;
+  // Researcher specific
+  name?: string;
+  course?: string;
+  university?: string;
+  // Respondent specific
+  ageRange?: string;
+  gender?: string;
+  state?: string;
+  education?: string;
+  employment?: string;
 }
 
 export interface Testimonial {
