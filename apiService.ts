@@ -1,13 +1,8 @@
 
 import { supabase } from './supabaseClient';
-import { UserProfile } from './types';
+import { UserProfile, SurveyCampaign } from './types';
 
-/**
- * Persists user registration data to the Supabase 'profiles' table.
- */
 export const registerUser = async (profile: UserProfile) => {
-  console.log(`[Unidata] Attempting registration for: ${profile.email}`);
-
   const payload = {
     email: profile.email,
     role: profile.role,
@@ -26,36 +21,49 @@ export const registerUser = async (profile: UserProfile) => {
       .from('profiles')
       .upsert([payload], { onConflict: 'email' });
 
-    if (error) {
-      console.error('[Supabase Error Log]:', error);
-      if (error.code === '23505') {
-        throw new Error("This email is already registered on our waitlist.");
-      }
-      throw new Error(error.message || "Registration failed. Please check your connection.");
-    }
-
+    if (error) throw error;
     return { success: true, data };
   } catch (err: any) {
-    console.error('[Unidata] Registration Error:', err.message);
     throw err;
   }
 };
 
 /**
- * Admin: Fetch all registered users
+ * Creates a new survey campaign
  */
-export const fetchAllProfiles = async (): Promise<UserProfile[]> => {
+export const createCampaign = async (campaign: Partial<SurveyCampaign>) => {
   const { data, error } = await supabase
-    .from('profiles')
+    .from('campaigns')
+    .insert([campaign]);
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Matching Engine Logic: Fetches surveys compatible with a specific respondent
+ */
+export const fetchMatchedSurveys = async (user: UserProfile): Promise<SurveyCampaign[]> => {
+  // In a real production app, we would use Supabase .contains() filters.
+  // For this MVP, we fetch active campaigns and filter in the engine.
+  const { data, error } = await supabase
+    .from('campaigns')
     .select('*')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching profiles:', error);
-    return [];
-  }
+  if (error) return [];
 
-  // Map snake_case from DB back to camelCase for the UI
+  return (data || []).filter(camp => {
+    const stateMatch = camp.target_states.length === 0 || camp.target_states.includes(user.state);
+    const genderMatch = camp.target_genders.length === 0 || camp.target_genders.includes(user.gender);
+    const ageMatch = camp.target_age_ranges.length === 0 || camp.target_age_ranges.includes(user.ageRange);
+    return stateMatch && genderMatch && ageMatch;
+  });
+};
+
+export const fetchAllProfiles = async (): Promise<UserProfile[]> => {
+  const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+  if (error) return [];
   return (data || []).map(row => ({
     id: row.id,
     email: row.email,
@@ -69,11 +77,4 @@ export const fetchAllProfiles = async (): Promise<UserProfile[]> => {
     education: row.education,
     employment: row.employment
   }));
-};
-
-/**
- * Unified helper for waitlist and account creation
- */
-export const subscribeToWaitlist = async (email: string, role: string, extraData: Partial<UserProfile> = {}) => {
-  return registerUser({ email, role: role as any, ...extraData });
 };

@@ -1,5 +1,7 @@
 {
   "name": "Unidata - AI-Powered Research in Nigeria",
   "description": "A high-conversion landing page and MVP for Unidata, an AI-driven survey platform connecting Nigerian researchers with verified respondents.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

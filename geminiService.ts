@@ -1,52 +1,91 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { SurveyQuestion } from "./types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 /**
- * Acts as a Research Consultant to extract variables and demographics from a topic or proposal.
+ * Define tool for the AI to interact with the application state.
  */
+export const updateQuestionTool: FunctionDeclaration = {
+  name: 'update_question',
+  parameters: {
+    type: Type.OBJECT,
+    description: 'Update a specific survey question in the research draft.',
+    properties: {
+      index: {
+        type: Type.NUMBER,
+        description: 'The 0-based index of the question to update.',
+      },
+      questionText: {
+        type: Type.STRING,
+        description: 'The new text for the question.',
+      },
+      type: {
+        type: Type.STRING,
+        description: 'The type of question (multiple_choice, short_answer, rating).',
+      },
+      options: {
+        type: Type.ARRAY,
+        items: { type: Type.STRING },
+        description: 'The options for multiple choice questions.',
+      },
+      rationale: {
+        type: Type.STRING,
+        description: 'Updated scientific rationale for this question.',
+      }
+    },
+    required: ['index'],
+  },
+};
+
+export const DR_UNIDATA_SYSTEM_INSTRUCTION = (topic: string, variables: string, demographics: string, currentQuestions: SurveyQuestion[]) => `
+You are Dr. Unidata, a Senior Research Methodologist and world-class expert in survey design, specifically tailored to the Nigerian academic and market research landscape.
+
+CONTEXT OF THE STUDY:
+- Topic: ${topic}
+- Core Variables: ${variables}
+- Target Demographics: ${demographics}
+- Current Instrument Draft: ${JSON.stringify(currentQuestions)}
+
+YOUR MANDATE:
+1. COLLABORATIVE EDITOR: When the user asks for changes, USE the 'update_question' tool to apply them in real-time. If they say "make Q1 more professional", rewrite it and call the tool.
+2. METHODOLOGICAL ADVISOR: Don't just follow orders. If a user asks for a leading question, explain *why* it introduces bias and suggest a neutral alternative.
+3. SURVEY BEST PRACTICES: 
+   - Encourage Likert scales (Strongly Disagree to Strongly Agree) for measuring attitudes.
+   - Avoid double-barreled questions (asking two things at once).
+   - Ensure language is accessible but academic.
+4. NIGERIAN CONTEXT: Suggest nuances specific to Nigeria (e.g., considering mobile-first users, data connectivity constraints, or specific cultural sensitivities).
+5. CONVERSATIONAL VOICE: If the user is speaking to you via audio, keep your spoken responses concise but expert.
+
+Always be supportive, rigorous, and scientific. Your goal is to help the researcher produce a Chapter 3 (Methodology) that is bulletproof.
+`;
+
 export const analyzeResearchContext = async (text: string): Promise<{ variables: string, demographics: string }> => {
   try {
-    const prompt = `You are a Senior Academic Research Consultant specializing in Nigerian higher education and market research. 
-    Review the following research objective or proposal snippet.
-    
-    Research Objective: "${text}"
-    
-    Based on your expertise, please suggest:
-    1. A list of 3-5 key variables or themes that are critical to measure for this specific study (comma-separated).
-    2. A precise description of the target demographics in the Nigerian context (e.g., 'Final year undergraduates in Lagos state', 'Small business owners in Onitsha').
-    
-    Ensure your response is in JSON format.`;
-
+    const prompt = `You are a Senior Academic Research Consultant. Review: "${text}". Suggest 3-5 variables and target demographics in JSON.`;
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        systemInstruction: "You are a helpful and expert academic consultant. Your goal is to guide the user towards a robust research methodology. Be precise and contextually relevant to Nigeria.",
+        systemInstruction: "Expert academic consultant for Nigeria. Output valid JSON.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            variables: { type: Type.STRING, description: "Key variables or themes extracted." },
-            demographics: { type: Type.STRING, description: "Target audience description." }
+            variables: { type: Type.STRING },
+            demographics: { type: Type.STRING }
           },
           required: ["variables", "demographics"]
         }
       }
     });
-
     return JSON.parse(response.text || '{"variables":"", "demographics":""}');
   } catch (error) {
-    console.error("Context Analysis Error:", error);
     return { variables: "", demographics: "" };
   }
 };
 
-/**
- * Generates initial survey questions with rationale.
- */
 export const generateSurveyQuestions = async (
   topic: string,
   keywords?: string,
@@ -55,78 +94,12 @@ export const generateSurveyQuestions = async (
   proposalText?: string
 ): Promise<SurveyQuestion[]> => {
   try {
-    const prompt = `Act as a Senior Research Consultant and Academic Advisor. 
-    The researcher is exploring: "${topic}".
-    ${proposalText ? `They have uploaded a detailed proposal: "${proposalText.substring(0, 1500)}..."` : ''}
-    
-    Key Metrics to observe: ${keywords || 'general study variables'}
-    Target Population: ${demographics || 'general Nigerian population'}
-    Requested Question Formats: ${preferredTypes?.join(', ') || 'multiple_choice, short_answer'}
-    
-    Task:
-    1. Generate 4 high-quality survey questions that follow international academic best practices but are adapted for Nigerian clarity.
-    2. For each question, provide a guiding "rationale" explaining why this question is scientifically valuable for their specific topic and how it links to their variables.
-    3. Ensure the questions are clear, avoid double-barreled phrasing, and are non-leading.`;
-
+    const prompt = `Draft 4 high-quality survey questions for: "${topic}". Variables: ${keywords}. Audience: ${demographics}. Formats: ${preferredTypes?.join(',')}. Provide options for multiple_choice.`;
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        systemInstruction: "You are a guiding research expert. Your tone is supportive, expert, and academic yet conversational. Help the user understand the 'why' behind the survey design.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              question: { type: Type.STRING },
-              type: { 
-                type: Type.STRING, 
-                description: "Must be one of: multiple_choice, short_answer, rating" 
-              },
-              options: { 
-                type: Type.ARRAY, 
-                items: { type: Type.STRING },
-                description: "Provide options if the question type is multiple_choice."
-              },
-              rationale: { 
-                type: Type.STRING, 
-                description: "A supportive, educational explanation of why this question matters to the study." 
-              }
-            },
-            required: ["question", "type", "rationale"]
-          }
-        }
-      }
-    });
-
-    return JSON.parse(response.text || "[]");
-  } catch (error) {
-    console.error("Survey Generation Error:", error);
-    throw error;
-  }
-};
-
-/**
- * Refines existing questions based on user feedback.
- */
-export const refineSurveyQuestions = async (
-  previousQuestions: SurveyQuestion[],
-  feedback: string
-): Promise<SurveyQuestion[]> => {
-  try {
-    const prompt = `I have reviewed your draft questions: ${JSON.stringify(previousQuestions)}
-    
-    The user has requested the following refinement: "${feedback}"
-    
-    As our Research Consultant, please revise the questions to address this feedback. 
-    Maintain high academic standards, ensure logical flow, and update the rationales to explain how the new questions improve the study.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        systemInstruction: "You are an iterative research partner. You listen carefully to feedback and improve survey methodology to make it more precise and actionable.",
+        systemInstruction: "You are a survey design expert. Ensure high academic quality and clarity.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -143,10 +116,44 @@ export const refineSurveyQuestions = async (
         }
       }
     });
-
     return JSON.parse(response.text || "[]");
   } catch (error) {
-    console.error("Refinement Error:", error);
     throw error;
   }
+};
+
+export const analyzeQualityAndBias = async (questions: SurveyQuestion[]): Promise<{ score: number, findings: string[], suggestions: string[] }> => {
+  try {
+    const prompt = `Audit these questions for bias: ${JSON.stringify(questions)}`;
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: "Critical Research Auditor. Focus on neutrality and clarity.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            score: { type: Type.NUMBER },
+            findings: { type: Type.ARRAY, items: { type: Type.STRING } },
+            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
+          },
+          required: ["score", "findings", "suggestions"]
+        }
+      }
+    });
+    return JSON.parse(response.text || '{"score":0, "findings":[], "suggestions":[]}');
+  } catch (error) {
+    return { score: 0, findings: [], suggestions: [] };
+  }
+};
+
+export const createResearchChat = (topic: string, variables: string, demographics: string, currentQuestions: SurveyQuestion[]) => {
+  return ai.chats.create({
+    model: 'gemini-3-pro-preview',
+    config: {
+      tools: [{ functionDeclarations: [updateQuestionTool] }],
+      systemInstruction: DR_UNIDATA_SYSTEM_INSTRUCTION(topic, variables, demographics, currentQuestions),
+    }
+  });
 };
