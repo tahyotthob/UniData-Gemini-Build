@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { createCampaign, fetchMatchedSurveys } from '../apiService';
 import { SurveyCampaign, SurveyQuestion } from '../types';
+import toast from 'react-hot-toast';
 
 interface SurveyMatchingProps {
   draftQuestions?: SurveyQuestion[];
@@ -49,7 +50,7 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
       });
       setLaunchSuccess(true);
     } catch (e) {
-      alert("Error launching campaign");
+      toast.error("Error launching campaign");
     } finally {
       setIsLaunching(false);
     }

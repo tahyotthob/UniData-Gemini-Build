@@ -6,7 +6,7 @@ export interface SurveyQuestion {
   rationale?: string;
 }
 
-export type UserRole = 'researcher' | 'respondent';
+export type UserRole = 'researcher' | 'respondent' | 'admin';
 
 export interface UserProfile {
   id?: string;
@@ -31,6 +31,14 @@ export interface SurveyCampaign {
   target_genders: string[];
   target_age_ranges: string[];
   reward: number;
+  created_at?: string;
+}
+
+export interface SurveyResponse {
+  id: string;
+  survey_id: string;
+  respondent_id: string;
+  answers: Record<string, string | number>;
   created_at?: string;
 }
 

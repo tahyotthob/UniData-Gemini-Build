@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { UserProfile, SurveyCampaign } from './types';
+import { UserProfile, SurveyCampaign, SurveyResponse } from './types';
 
 export const registerUser = async (profile: UserProfile) => {
   const payload = {
@@ -34,18 +34,17 @@ export const registerUser = async (profile: UserProfile) => {
 export const createCampaign = async (campaign: Partial<SurveyCampaign>) => {
   const { data, error } = await supabase
     .from('campaigns')
-    .insert([campaign]);
+    .insert([campaign])
+    .select();
 
   if (error) throw error;
   return data;
 };
 
 /**
- * Matching Engine Logic: Fetches surveys compatible with a specific respondent
+ * Matching Engine: Fetches surveys compatible with a respondent's profile
  */
 export const fetchMatchedSurveys = async (user: UserProfile): Promise<SurveyCampaign[]> => {
-  // In a real production app, we would use Supabase .contains() filters.
-  // For this MVP, we fetch active campaigns and filter in the engine.
   const { data, error } = await supabase
     .from('campaigns')
     .select('*')
@@ -59,6 +58,86 @@ export const fetchMatchedSurveys = async (user: UserProfile): Promise<SurveyCamp
     const ageMatch = camp.target_age_ranges.length === 0 || camp.target_age_ranges.includes(user.ageRange);
     return stateMatch && genderMatch && ageMatch;
   });
+};
+
+/**
+ * Fetches all surveys created by a specific researcher
+ */
+export const fetchResearcherSurveys = async (researcherId: string): Promise<SurveyCampaign[]> => {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('researcher_id', researcherId)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return data || [];
+};
+
+/**
+ * Fetches a single survey by ID
+ */
+export const fetchSurveyById = async (surveyId: string): Promise<SurveyCampaign | null> => {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('id', surveyId)
+    .single();
+
+  if (error) return null;
+  return data;
+};
+
+/**
+ * Fetches all responses for a given survey
+ */
+export const fetchSurveyResponses = async (surveyId: string): Promise<SurveyResponse[]> => {
+  const { data, error } = await supabase
+    .from('responses')
+    .select('*')
+    .eq('survey_id', surveyId)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return data || [];
+};
+
+/**
+ * Submits a survey response
+ */
+export const submitSurveyResponse = async (
+  surveyId: string,
+  respondentId: string,
+  answers: Record<string, string | number>
+): Promise<{ success: boolean; error?: string }> => {
+  const { error } = await supabase
+    .from('responses')
+    .insert([{
+      survey_id: surveyId,
+      respondent_id: respondentId,
+      answers,
+    }]);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+};
+
+/**
+ * Check if a respondent has already responded to a survey
+ */
+export const hasRespondedToSurvey = async (
+  surveyId: string,
+  respondentId: string
+): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('responses')
+    .select('id')
+    .eq('survey_id', surveyId)
+    .eq('respondent_id', respondentId)
+    .limit(1);
+
+  if (error) return false;
+  return (data || []).length > 0;
 };
 
 export const fetchAllProfiles = async (): Promise<UserProfile[]> => {
