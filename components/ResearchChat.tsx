@@ -85,7 +85,7 @@ const ResearchChat: React.FC<ResearchChatProps> = ({
   const nextStartTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
   useEffect(() => {
     if (isOpen && !chatRef.current) {

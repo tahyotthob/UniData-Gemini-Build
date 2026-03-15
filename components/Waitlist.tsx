@@ -56,7 +56,7 @@ const Waitlist: React.FC = () => {
                   </svg>
                 </button>
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] pt-4">
-                  Secured with Bank-Grade Encryption & NNDP Compliant
+                  Your data is protected and encrypted
                 </p>
               </div>
             )}

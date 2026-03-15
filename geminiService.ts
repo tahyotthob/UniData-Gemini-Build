@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { SurveyQuestion } from "./types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 /**
  * Define tool for the AI to interact with the application state.

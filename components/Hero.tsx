@@ -64,7 +64,7 @@ const Hero: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 font-bold uppercase tracking-tight">Data Quality</p>
-                  <p className="text-lg font-black text-unidata-blue">98.9% Verified</p>
+                  <p className="text-lg font-black text-unidata-blue">High Quality</p>
                 </div>
               </div>
             </div>

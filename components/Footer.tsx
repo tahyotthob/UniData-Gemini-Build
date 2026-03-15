@@ -1,11 +1,8 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-interface FooterProps {
-  onAdminOpen?: () => void;
-}
-
-const Footer: React.FC<FooterProps> = ({ onAdminOpen }) => {
+const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-white py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,7 +33,7 @@ const Footer: React.FC<FooterProps> = ({ onAdminOpen }) => {
             <ul className="space-y-4 text-gray-400">
               <li><a href="#ai-demo" className="hover:text-white transition-colors">AI Generator</a></li>
               <li><a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
-              <li><button onClick={onAdminOpen} className="hover:text-unidata-green transition-colors text-left">Admin View</button></li>
+              <li><Link to="/admin" className="hover:text-unidata-green transition-colors">Admin View</Link></li>
             </ul>
           </div>
           <div>
@@ -51,8 +48,7 @@ const Footer: React.FC<FooterProps> = ({ onAdminOpen }) => {
         <div className="pt-12 border-t border-gray-800 text-center text-gray-500 text-sm flex flex-col md:flex-row justify-between items-center gap-4">
           <p>&copy; {new Date().getFullYear()} Unidata Technologies. All rights reserved.</p>
           <div className="flex gap-4">
-            <span className="text-[10px] bg-gray-800 px-2 py-1 rounded">NNDP Compliant</span>
-            <span className="text-[10px] bg-gray-800 px-2 py-1 rounded">SSL Secure</span>
+            <span className="text-[10px] bg-gray-800 px-2 py-1 rounded">Secure Platform</span>
           </div>
         </div>
       </div>

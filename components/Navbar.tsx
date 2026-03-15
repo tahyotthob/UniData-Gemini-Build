@@ -1,11 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
 const Navbar: React.FC = () => {
-  const { user, setShowAuthModal, logout } = useAuth();
+  const { user, setShowAuthModal, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isLandingPage = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +21,11 @@ const Navbar: React.FC = () => {
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, id: string) => {
     e.preventDefault();
+    if (!isLandingPage) {
+      navigate('/', { state: { scrollTo: id } });
+      setIsMenuOpen(false);
+      return;
+    }
     const element = document.getElementById(id);
     if (element) {
       const offset = 80;
@@ -30,7 +39,7 @@ const Navbar: React.FC = () => {
     }
   };
 
-  const navLinks = [
+  const landingLinks = [
     { name: 'How it Works', id: 'how-it-works' },
     { name: 'Features', id: 'features' },
     { name: 'Why Us', id: 'why-unidata' }
@@ -40,9 +49,9 @@ const Navbar: React.FC = () => {
     <nav className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <div 
+          <div
             className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => isLandingPage ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate('/')}
           >
             <div className="w-8 h-8 bg-unidata-blue rounded-lg flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-xl">U</span>
@@ -51,31 +60,37 @@ const Navbar: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
-            {navLinks.map((link) => (
-              <a 
+            {isLandingPage && landingLinks.map((link) => (
+              <a
                 key={link.id}
-                href={`#${link.id}`} 
+                href={`#${link.id}`}
                 onClick={(e) => scrollToSection(e, link.id)}
                 className="text-gray-600 hover:text-unidata-blue font-medium transition-colors"
               >
                 {link.name}
               </a>
             ))}
-            
+
             {user ? (
               <div className="flex items-center gap-4">
+                <Link
+                  to="/dashboard"
+                  className="text-gray-600 hover:text-unidata-blue font-medium transition-colors"
+                >
+                  Dashboard
+                </Link>
                 <span className="text-xs font-bold text-unidata-blue bg-unidata-lightGreen px-3 py-1.5 rounded-full border border-unidata-green/10">
                   Hi, {user.name || user.email.split('@')[0]}
                 </span>
-                <button 
-                  onClick={logout}
+                <button
+                  onClick={signOut}
                   className="text-xs text-red-400 hover:text-red-600 font-bold"
                 >
                   Logout
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => setShowAuthModal(true)}
                 className="bg-unidata-blue text-white px-6 py-2.5 rounded-full font-semibold hover:bg-unidata-darkBlue transition-all shadow-md active:scale-95"
               >
@@ -98,14 +113,23 @@ const Navbar: React.FC = () => {
 
       <div className={`md:hidden absolute top-full left-0 right-0 bg-white shadow-xl transition-all duration-300 ease-in-out ${isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
         <div className="px-4 pt-2 pb-6 space-y-2">
-          {navLinks.map((link) => (
+          {isLandingPage && landingLinks.map((link) => (
             <a key={link.id} href={`#${link.id}`} onClick={(e) => scrollToSection(e, link.id)} className="block px-4 py-3 text-gray-700 hover:bg-unidata-lightGreen hover:text-unidata-green rounded-xl font-medium">{link.name}</a>
           ))}
+          {user && (
+            <Link
+              to="/dashboard"
+              onClick={() => setIsMenuOpen(false)}
+              className="block px-4 py-3 text-gray-700 hover:bg-unidata-lightGreen hover:text-unidata-green rounded-xl font-medium"
+            >
+              Dashboard
+            </Link>
+          )}
           <div className="pt-4 px-4">
             {user ? (
-              <button onClick={logout} className="w-full py-4 text-red-500 font-bold">Logout</button>
+              <button onClick={signOut} className="w-full py-4 text-red-500 font-bold">Logout</button>
             ) : (
-              <button onClick={() => setShowAuthModal(true)} className="w-full bg-unidata-blue text-white px-6 py-4 rounded-xl font-bold shadow-lg">Get Early Access</button>
+              <button onClick={() => { setShowAuthModal(true); setIsMenuOpen(false); }} className="w-full bg-unidata-blue text-white px-6 py-4 rounded-xl font-bold shadow-lg">Get Early Access</button>
             )}
           </div>
         </div>

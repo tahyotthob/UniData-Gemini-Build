@@ -1,9 +1,18 @@
-
 import React, { useEffect, useState } from 'react';
 import { fetchAllProfiles } from '../apiService';
 import { UserProfile } from '../types';
+import { useAuth } from './AuthContext';
+
+const escapeCSVValue = (value: unknown): string => {
+  const str = String(value ?? '');
+  if (str.match(/[,"\r\n]/) || str.startsWith('=') || str.startsWith('+') || str.startsWith('-') || str.startsWith('@') || str.startsWith('\t')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
 
 const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { user } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'researcher' | 'respondent'>('all');
@@ -17,6 +26,21 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     load();
   }, []);
 
+  // Gate: only allow admin users
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="fixed inset-0 z-[200] bg-gray-900/95 backdrop-blur-xl flex items-center justify-center p-4 text-white">
+        <div className="text-center">
+          <h2 className="text-3xl font-black uppercase tracking-tighter mb-4">Access Denied</h2>
+          <p className="text-gray-400 mb-8">You do not have admin privileges to view this page.</p>
+          <button onClick={onClose} className="bg-unidata-blue text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-unidata-darkBlue transition-all">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const filteredProfiles = profiles.filter(p => filter === 'all' || p.role === filter);
 
   return (
@@ -29,7 +53,7 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               Total Signups: {profiles.length}
             </p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-red-500 transition-all group"
           >
@@ -102,18 +126,23 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </table>
           )}
         </div>
-        
+
         <div className="mt-8 flex justify-between items-center text-xs text-gray-500 font-bold uppercase tracking-widest">
           <p>Confidential Unidata Founder Access</p>
-          <button 
+          <button
             onClick={() => {
-              const csv = profiles.map(p => Object.values(p).join(',')).join('\n');
+              const headers = ['Name', 'Email', 'Role', 'University', 'Course', 'Age Range', 'Gender', 'State', 'Education', 'Employment'];
+              const rows = profiles.map(p => [
+                p.name, p.email, p.role, p.university, p.course, p.ageRange, p.gender, p.state, p.education, p.employment
+              ].map(escapeCSVValue).join(','));
+              const csv = [headers.join(','), ...rows].join('\n');
               const blob = new Blob([csv], { type: 'text/csv' });
               const url = window.URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.setAttribute('href', url);
               a.setAttribute('download', 'unidata_waitlist.csv');
               a.click();
+              window.URL.revokeObjectURL(url);
             }}
             className="text-unidata-green hover:underline"
           >
