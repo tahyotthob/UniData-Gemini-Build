@@ -26,9 +26,13 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
   useEffect(() => {
     if (user?.role === 'respondent') {
       const load = async () => {
-        const matched = await fetchMatchedSurveys(user);
-        setSurveys(matched);
-        setLoading(false);
+        try {
+          setSurveys(await fetchMatchedSurveys(user));
+        } catch (e) {
+          console.error('Could not load matched surveys', e);
+        } finally {
+          setLoading(false);
+        }
       };
       load();
     }
@@ -49,7 +53,7 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
       });
       setLaunchSuccess(true);
     } catch (e) {
-      alert("Error launching campaign");
+      alert((e as Error).message || "Error launching campaign");
     } finally {
       setIsLaunching(false);
     }

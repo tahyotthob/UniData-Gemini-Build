@@ -2,20 +2,50 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAllProfiles } from '../apiService';
 import { UserProfile } from '../types';
+import { useAuth } from './AuthContext';
 
 const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'researcher' | 'respondent'>('all');
+  const [error, setError] = useState('');
+  const { isAdmin, loading: authLoading, sessionEmail, setShowAuthModal } = useAuth();
 
   useEffect(() => {
+    if (!isAdmin) return;
     const load = async () => {
-      const data = await fetchAllProfiles();
-      setProfiles(data);
-      setLoading(false);
+      try {
+        setProfiles(await fetchAllProfiles());
+      } catch (e: any) {
+        setError(e.message || 'Could not load signups.');
+      } finally {
+        setLoading(false);
+      }
     };
     load();
-  }, []);
+  }, [isAdmin]);
+
+  if (authLoading) return null;
+
+  // Access is enforced by Row Level Security on the server; this is just the friendly UI.
+  if (!isAdmin) {
+    return (
+      <div className="fixed inset-0 z-[200] bg-gray-900/95 flex items-center justify-center p-6 text-white">
+        <div className="max-w-sm text-center">
+          <h2 className="text-2xl font-black uppercase tracking-tight mb-3">Admins only</h2>
+          <p className="text-gray-400 text-sm mb-8">
+            {sessionEmail ? `${sessionEmail} does not have admin access.` : 'Sign in with an admin account to continue.'}
+          </p>
+          <div className="flex gap-3 justify-center">
+            {!sessionEmail && (
+              <button onClick={() => { onClose(); setShowAuthModal(true); }} className="px-6 py-3 rounded-xl bg-unidata-blue font-black text-xs uppercase tracking-widest">Sign in</button>
+            )}
+            <button onClick={onClose} className="px-6 py-3 rounded-xl bg-white/10 font-black text-xs uppercase tracking-widest">Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const filteredProfiles = profiles.filter(p => filter === 'all' || p.role === filter);
 
@@ -38,6 +68,8 @@ const AdminDashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </svg>
           </button>
         </div>
+
+        {error && <p className="text-red-400 text-sm font-bold mb-4">{error}</p>}
 
         <div className="flex gap-4 mb-8">
           {(['all', 'researcher', 'respondent'] as const).map(f => (

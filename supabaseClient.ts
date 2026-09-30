@@ -12,4 +12,6 @@ if (!supabaseUrl || supabaseUrl.includes('your-project')) {
   console.warn("Unidata: Supabase is not configured with a valid project URL.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+});

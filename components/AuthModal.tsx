@@ -1,15 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { registerUser } from '../apiService';
 import { UserRole } from '../types';
 
 const AuthModal: React.FC = () => {
-  const { login, showAuthModal, setShowAuthModal } = useAuth();
+  const { sessionEmail, user, sendCode, verifyCode, refreshProfile, showAuthModal, setShowAuthModal } = useAuth();
   const [role, setRole] = useState<UserRole>('researcher');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1 email, 2 code, 3 profile
+  const [code, setCode] = useState('');
+  const [consent, setConsent] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -24,37 +26,51 @@ const AuthModal: React.FC = () => {
     employment: ''
   });
 
+  // Signed in (verified) but profile not finished -> jump straight to the profile step.
+  useEffect(() => {
+    if (showAuthModal && sessionEmail && !user) {
+      setFormData(prev => ({ ...prev, email: sessionEmail }));
+      setStep(3);
+    }
+  }, [showAuthModal, sessionEmail, user]);
+
   if (!showAuthModal) return null;
+
+  const closeModal = () => {
+    setShowAuthModal(false);
+    setStep(sessionEmail && !user ? 3 : 1);
+    setCode('');
+    setError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Basic validation for Step 1
-    if (step === 1 && !formData.email) {
-      setError("Email is required to continue.");
-      return;
-    }
-
-    if (step === 1) {
-      setStep(2);
-      setError('');
-      return;
-    }
-
     setError('');
     setLoading(true);
 
     try {
-      const profile = { ...formData, role };
-      await registerUser(profile);
-      
-      // PERSISTENCE FIX: Set the waitlist flag in local storage
-      localStorage.setItem('unidata_joined', 'true');
-      
-      login(profile);
-      setStep(1); // Reset for next time
+      if (step === 1) {
+        await sendCode(formData.email.trim());
+        setStep(2);
+      } else if (step === 2) {
+        await verifyCode(formData.email.trim(), code);
+        // If a profile already exists, AuthContext loads it and we're done; otherwise go to step 3.
+        await refreshProfile();
+        setCode('');
+        setStep(3);
+      } else {
+        if (!consent) {
+          setError('Please accept the privacy terms to continue.');
+          return;
+        }
+        await registerUser({ ...formData, role });
+        localStorage.setItem('unidata_joined', 'true');
+        await refreshProfile();
+        setShowAuthModal(false);
+        setStep(1);
+      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -77,10 +93,7 @@ const AuthModal: React.FC = () => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <div 
         className="absolute inset-0 bg-unidata-blue/80 backdrop-blur-md transition-opacity" 
-        onClick={() => {
-           setShowAuthModal(false);
-           setStep(1);
-        }}
+        onClick={closeModal}
       ></div>
       
       <div className="relative bg-white w-full max-w-lg rounded-[40px] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden animate-fade-in border border-white/20">
@@ -88,17 +101,14 @@ const AuthModal: React.FC = () => {
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-3xl font-black text-unidata-blue uppercase tracking-tight">
-                {step === 1 ? 'Step 1: Account' : 'Step 2: Profile'}
+                {step === 1 ? 'Step 1: Account' : step === 2 ? 'Step 2: Verify' : 'Step 3: Profile'}
               </h2>
               <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">
                 {role === 'researcher' ? 'Researcher Portal' : 'Respondent Network'}
               </p>
             </div>
             <button 
-              onClick={() => {
-                setShowAuthModal(false);
-                setStep(1);
-              }} 
+              onClick={closeModal}
               className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-unidata-blue transition-all"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -107,13 +117,13 @@ const AuthModal: React.FC = () => {
 
           <div className="flex p-1.5 bg-gray-100 rounded-[20px] mb-10">
             <button 
-              onClick={() => { setRole('researcher'); setStep(1); }}
+              onClick={() => setRole('researcher')}
               className={`flex-1 py-3.5 rounded-[15px] font-black text-[10px] uppercase tracking-widest transition-all ${role === 'researcher' ? 'bg-white text-unidata-blue shadow-lg' : 'text-gray-400 hover:text-gray-600'}`}
             >
               I am a Researcher
             </button>
             <button 
-              onClick={() => { setRole('respondent'); setStep(1); }}
+              onClick={() => setRole('respondent')}
               className={`flex-1 py-3.5 rounded-[15px] font-black text-[10px] uppercase tracking-widest transition-all ${role === 'respondent' ? 'bg-white text-unidata-blue shadow-lg' : 'text-gray-400 hover:text-gray-600'}`}
             >
               I am a Respondent
@@ -134,6 +144,23 @@ const AuthModal: React.FC = () => {
                 />
                 <p className="text-[10px] text-gray-400 mt-3 italic">
                   We'll use this to notify you about {role === 'researcher' ? 'responses' : 'survey rewards'}.
+                </p>
+              </div>
+            ) : step === 2 ? (
+              <div className="animate-fade-in">
+                <label className="block text-[10px] font-black text-unidata-blue uppercase tracking-widest mb-2 opacity-60">Verification Code</label>
+                <input
+                  required
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={10}
+                  placeholder="Enter the code from your email"
+                  className="w-full px-6 py-5 rounded-2xl border-2 border-gray-50 bg-gray-50 focus:bg-white focus:border-unidata-blue outline-none transition-all text-lg tracking-[0.4em] font-bold text-center"
+                  value={code}
+                  onChange={(e) => { setCode(e.target.value); if (error) setError(''); }}
+                />
+                <p className="text-[10px] text-gray-400 mt-3 italic">
+                  We sent a code to {formData.email}. Check your spam folder if you don't see it.
                 </p>
               </div>
             ) : (
@@ -249,6 +276,13 @@ const AuthModal: React.FC = () => {
                     </div>
                   </>
                 )}
+                <label className="flex items-start gap-3 text-[11px] text-gray-500 leading-relaxed cursor-pointer">
+                  <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
+                  <span>
+                    I consent to Unidata storing this information to match me with surveys and run the service, in line with the
+                    Nigeria Data Protection Act (NDPA). I can ask for my data to be deleted at any time.
+                  </span>
+                </label>
               </div>
             )}
 
@@ -258,7 +292,7 @@ const AuthModal: React.FC = () => {
                {step === 2 && (
                  <button
                    type="button"
-                   onClick={() => setStep(1)}
+                   onClick={() => { setStep(1); setError(''); }}
                    className="px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-gray-100 text-gray-400 hover:border-unidata-blue hover:text-unidata-blue transition-all"
                  >
                    Back
@@ -271,7 +305,7 @@ const AuthModal: React.FC = () => {
               >
                 {loading ? (
                   <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                ) : (step === 1 ? 'Next: Build Profile' : 'Confirm Registration')}
+                ) : (step === 1 ? 'Send Me a Code' : step === 2 ? 'Verify & Continue' : 'Confirm Registration')}
               </button>
             </div>
           </form>

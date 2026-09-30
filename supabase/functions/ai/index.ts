@@ -4,12 +4,16 @@
 //   AI_API_KEY   - provider key
 //   AI_BASE_URL  - default https://api.groq.com/openai/v1
 //   AI_MODEL     - default llama-3.3-70b-versatile
-//   AI_DAILY_LIMIT - max requests per client per day (default 40)
+//   AI_DAILY_LIMIT - max requests per signed-in user per day (default 40)
+//   AI_ANON_DAILY_LIMIT - max requests per anonymous visitor (by IP) per day (default 5)
 
 const BASE_URL = Deno.env.get('AI_BASE_URL') ?? 'https://api.groq.com/openai/v1';
 const API_KEY = Deno.env.get('AI_API_KEY') ?? '';
 const MODEL = Deno.env.get('AI_MODEL') ?? 'llama-3.3-70b-versatile';
 const DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT') ?? 40);
+const ANON_DAILY_LIMIT = Number(Deno.env.get('AI_ANON_DAILY_LIMIT') ?? 5);
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -20,14 +24,24 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
-// Best-effort in-memory quota (per isolate). Replace with a DB table once real auth lands.
+// Resolves the Supabase user from the caller's JWT (null for anonymous visitors).
+async function getUserId(req: Request): Promise<string | null> {
+  const auth = req.headers.get('authorization');
+  if (!auth || !SUPABASE_URL) return null;
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { Authorization: auth, apikey: SUPABASE_ANON_KEY } });
+  if (!res.ok) return null;
+  const u = await res.json();
+  return u?.id ?? null;
+}
+
+// Best-effort in-memory quota (per isolate). Move to a DB table for durability across instances.
 const usage = new Map<string, { day: string; count: number }>();
-function overQuota(key: string): boolean {
+function overQuota(key: string, limit: number): boolean {
   const day = new Date().toISOString().slice(0, 10);
   const u = usage.get(key);
   if (!u || u.day !== day) { usage.set(key, { day, count: 1 }); return false; }
   u.count += 1;
-  return u.count > DAILY_LIMIT;
+  return u.count > limit;
 }
 
 const UPDATE_QUESTION_TOOL = {
@@ -89,8 +103,9 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
   if (!API_KEY) return json({ error: 'AI is not configured on the server.' }, 500);
 
-  const client = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anon';
-  if (overQuota(client)) return json({ error: 'Daily AI limit reached. Try again tomorrow.' }, 429);
+  const userId = await getUserId(req);
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anon';
+  if (userId ? overQuota(`u:${userId}`, DAILY_LIMIT) : overQuota(`ip:${ip}`, ANON_DAILY_LIMIT)) return json({ error: 'Daily AI limit reached. Try again tomorrow.' }, 429);
 
   try {
     const { task, payload } = await req.json();

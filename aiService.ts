@@ -1,5 +1,5 @@
 import { SurveyQuestion } from './types';
-import { supabaseUrl, supabaseAnonKey } from './supabaseClient';
+import { supabase, supabaseUrl, supabaseAnonKey } from './supabaseClient';
 
 /**
  * Client for the server-side AI proxy (supabase/functions/ai).
@@ -9,8 +9,10 @@ const AI_URL = import.meta.env.VITE_AI_URL || `${supabaseUrl}/functions/v1/ai`;
 
 async function callAi<T>(task: string, payload: unknown): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const { data: { session } } = await supabase.auth.getSession();
   headers.apikey = supabaseAnonKey;
-  headers.Authorization = `Bearer ${supabaseAnonKey}`;
+  // Signed-in users get a personal quota; visitors fall back to the anon key and a small IP quota.
+  headers.Authorization = `Bearer ${session?.access_token ?? supabaseAnonKey}`;
   const res = await fetch(AI_URL, { method: 'POST', headers, body: JSON.stringify({ task, payload }) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `AI request failed (${res.status})`);
