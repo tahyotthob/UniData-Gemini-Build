@@ -15,7 +15,7 @@ Campus/community tool for Nigerian final-year undergraduates to design, collect 
 End-to-end: questionnaire design (AI Chapter-3 help) → response collection → analysis/export.
 
 ## Business model
-Freemium: free basic (AI drafting) + paid extras. Exact paid extras and ₦ price points: TBD.
+Freemium: free basic (AI drafting, survey link, responses). Paid extras: results analysis + charts, more responses/reach, advanced AI methodology (bias audit, sample size, reliability). Target price: ₦2,000–₦5,000 per project (to validate).
 
 ## MVP priority
 1. Shareable survey link + response collection (first to ship).
@@ -23,12 +23,15 @@ Freemium: free basic (AI drafting) + paid extras. Exact paid extras and ₦ pric
 3. Paystack payments for paid extras.
 
 ## Constraints
-Solo, minimal budget → low AI cost per user (server-side proxy, quotas, cheap model), avoid paid respondent panel/payouts at launch.
+Solo, near-zero monthly budget (free tiers) → low AI cost per user (server-side proxy, quotas, cheap model), avoid paid respondent panel/payouts at launch.
+
+## Launch
+Owner's own university first.
 
 ## Open questions
-- What exactly is paid? (respondent reach, analysis, export, more AI usage, verified respondents)
-- Price points in ₦ and student willingness to pay.
-- Which university first; how to seed respondents; any incentive for respondents?
+- Validate willingness to pay at ₦2k–5k (which extra converts best?).
+- Which university (owner's own — name?), how to seed respondents; incentive for respondents?
+- What is "more responses/reach" concretely without a paid panel? (e.g. promoting to campus groups)
 - AI provider choice & monthly AI budget ceiling.
 - Data protection (NDPA) consent approach.
 - Keep voice mode for MVP?
