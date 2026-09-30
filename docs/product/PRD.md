@@ -7,6 +7,8 @@ Campus/community tool for Nigerian final-year undergraduates to design, collect 
 - First paying researchers (students).
 - Prove the loop: draft survey with AI → share link → collect responses.
 
+- Metrics targets (6 mo): 200 surveys created, 40 paying researchers (~20% paid conversion).
+
 ## Users
 - **Primary:** final-year undergraduates (researchers).
 - **Respondents at launch:** students on campus, seeded from owner's university networks.
@@ -25,6 +27,11 @@ Freemium: free basic (AI drafting, survey link, responses). Paid extras: results
 ## Constraints
 Solo, near-zero monthly budget (free tiers) → low AI cost per user (server-side proxy, quotas, cheap model), avoid paid respondent panel/payouts at launch.
 
+## Decisions
+- **AI:** free-tier open models behind a server-side proxy (provider-agnostic, swap to paid when revenue arrives); per-user quotas; browser-native voice (STT/TTS).
+- **Reach:** campus respondent pool — students opt in; matching engine selects them by demographics.
+- **Privacy:** demographics collected with explicit consent + privacy policy (NDPA); minimise data, admin access restricted via RLS.
+
 ## Launch
 Owner's own university first.
 
@@ -32,7 +39,7 @@ Owner's own university first.
 - Validate willingness to pay at ₦2k–5k (which extra converts best?).
 - Which university (owner's own — name?), how to seed respondents; incentive for respondents?
 - What is "more responses/reach" concretely without a paid panel? (e.g. promoting to campus groups)
-- AI provider choice & monthly AI budget ceiling.
-- Data protection (NDPA) consent approach.
+- Which free-tier provider first (check rate limits/quality for JSON + tool-calling).
+- Consent wording, retention period, who can see respondent demographics.
+- Respondent incentive (airtime later?) to keep the pool active.
 - Keep voice mode for MVP?
-- Success metrics/targets (signups, surveys published, responses per survey, paying users).
