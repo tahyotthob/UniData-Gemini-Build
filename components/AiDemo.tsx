@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { generateSurveyQuestions, analyzeResearchContext, analyzeQualityAndBias } from '../geminiService';
+import { generateSurveyQuestions, analyzeResearchContext, analyzeQualityAndBias } from '../aiService';
 import { SurveyQuestion } from '../types';
 import { useAuth } from './AuthContext';
 import SurveyMatching from './SurveyMatching';

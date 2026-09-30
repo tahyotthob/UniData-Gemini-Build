@@ -2,19 +2,15 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Unidata
 
-This contains everything you need to run your app locally.
+AI-assisted survey design for Nigerian researchers and students.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1j0VqGR20M5IQAwrIIq63sfoLpUspSDXM
+## Run locally
 
-## Run Locally
+1. `npm install`
+2. Copy `.env.example` to `.env.local` and fill in your Supabase URL/anon key.
+3. Deploy the AI proxy (see [supabase/README.md](supabase/README.md)) - it holds the AI provider key server-side.
+4. `npm run dev`
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Product docs: [docs/product/PRD.md](docs/product/PRD.md), [docs/product/BACKLOG.md](docs/product/BACKLOG.md), [docs/REVIEW.md](docs/REVIEW.md).
