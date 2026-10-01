@@ -3,8 +3,8 @@
 ## Must (Phase 0–2: make it safe, then close the loop)
 1. **Move AI server-side, remove Gemini** — Edge Function proxy, free-tier open model, per-user quota. *AC:* no AI key in browser bundle; all 4 AI features + chat work; quota enforced.
 2. **Real auth (Supabase Auth) + RLS — DONE in code; migration + Supabase dashboard setup pending (see supabase/README.md)** — *AC:* users can't read others' data; admin role gated.
-3. **Publish survey → shareable link/QR** — *AC:* researcher gets a public URL; works on mobile/low data.
-4. **Collect responses** — respondent answers stored, one per respondent, progress/validation. *AC:* researcher sees count live.
+3. **Publish survey → shareable link/QR — DONE in code (needs migration 20261001)** — *AC:* researcher gets a public URL; works on mobile/low data.
+4. **Collect responses — DONE in code (needs migration 20261001)** — respondent answers stored, one per respondent, progress/validation. *AC:* researcher sees count live.
 5. **Consent + privacy policy** for demographics (NDPA) — consent checkbox added at signup; privacy policy page still to write.
 6. **Campus respondent pool** — opt-in profiles feed the existing matching engine (moved to SQL).
 

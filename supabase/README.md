@@ -20,3 +20,7 @@ Quotas: signed-in users get `AI_DAILY_LIMIT` (40) requests/day, anonymous visito
 3. **Apply the migration:** `supabase db push` (or paste `migrations/20260930000000_auth_and_rls.sql` in the SQL editor). It enables Row Level Security, adds the `admins` table and the `matched_campaigns()` function.
 4. **Make yourself admin:** `insert into public.admins (email) values ('you@example.com');`
 5. Rotate the anon key that was committed earlier (Project Settings -> API) and put the new one in `.env.local` as `VITE_SUPABASE_ANON_KEY`.
+
+# Survey sharing & responses
+
+Apply `migrations/20261001000000_survey_sharing_and_responses.sql` after the auth migration. It adds `share_slug`/`status`/`response_limit` to `campaigns`, a `responses` table (RLS: only the campaign's researcher can read), and two public RPCs: `get_public_survey(slug)` and `submit_response(slug, token, answers)`. Respondents open `#/s/<slug>`, no login required; duplicates are blocked per signed-in user or per browser token (a soft limit - the token can be cleared).

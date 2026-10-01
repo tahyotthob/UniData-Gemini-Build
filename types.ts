@@ -31,6 +31,9 @@ export interface SurveyCampaign {
   target_genders: string[];
   target_age_ranges: string[];
   reward: number;
+  share_slug?: string;
+  status?: 'open' | 'closed';
+  response_count?: number;
   created_at?: string;
 }
 
@@ -42,3 +45,13 @@ export interface Testimonial {
   image?: string;
   color?: string;
 }
+
+export interface PublicSurvey {
+  id: string;
+  title: string;
+  questions: SurveyQuestion[];
+  status: 'open' | 'closed';
+}
+
+/** One answer per question, in question order. Ratings are 1-5. */
+export type SurveyAnswer = string | number | null;

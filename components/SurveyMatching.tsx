@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { createCampaign, fetchMatchedSurveys } from '../apiService';
 import { SurveyCampaign, SurveyQuestion } from '../types';
+import MyCampaigns, { surveyUrl } from './MyCampaigns';
 
 interface SurveyMatchingProps {
   draftQuestions?: SurveyQuestion[];
@@ -15,6 +16,8 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
   const [loading, setLoading] = useState(true);
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchSuccess, setLaunchSuccess] = useState(false);
+  const [launchedSlug, setLaunchedSlug] = useState('');
+  const [listVersion, setListVersion] = useState(0);
 
   // Target Filter States
   const [targets, setTargets] = useState({
@@ -42,7 +45,7 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
     if (!user) return;
     setIsLaunching(true);
     try {
-      await createCampaign({
+      const created = await createCampaign({
         title: draftTitle || "Untitled Research Study",
         questions: draftQuestions,
         target_states: targets.states,
@@ -51,6 +54,8 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
         reward: 500,
         researcher_id: user.id
       });
+      setLaunchedSlug(created.share_slug);
+      setListVersion(v => v + 1);
       setLaunchSuccess(true);
     } catch (e) {
       alert((e as Error).message || "Error launching campaign");
@@ -73,6 +78,7 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
   return (
     <div className="mt-12 animate-fade-in">
       {user.role === 'researcher' ? (
+        <>
         <div className="bg-unidata-blue text-white rounded-[40px] p-8 md:p-12 shadow-2xl">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
             <div>
@@ -80,8 +86,8 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
               <p className="text-blue-200 text-sm mt-1">Configure who should see your survey across Nigeria.</p>
             </div>
             {launchSuccess ? (
-              <div className="bg-unidata-green px-6 py-3 rounded-2xl flex items-center gap-2 animate-bounce">
-                <span className="font-black text-xs uppercase">Campaign Live!</span>
+              <div className="bg-unidata-green px-6 py-3 rounded-2xl flex items-center gap-2 ">
+                <span className="font-black text-xs uppercase">Survey Live!</span>
               </div>
             ) : (
               <button 
@@ -93,6 +99,13 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
               </button>
             )}
           </div>
+
+          {launchedSlug && (
+            <div className="mb-8 bg-white/10 border border-white/10 rounded-3xl p-5 text-sm">
+              <p className="text-[10px] font-black text-unidata-green uppercase tracking-widest mb-2">Share this link with respondents</p>
+              <p className="break-all select-all">{surveyUrl(launchedSlug)}</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Target Geography */}
@@ -145,6 +158,8 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
             </div>
           </div>
         </div>
+        <MyCampaigns refreshKey={listVersion} />
+        </>
       ) : (
         <div className="space-y-8">
           <div className="flex justify-between items-center">
@@ -175,9 +190,9 @@ const SurveyMatching: React.FC<SurveyMatchingProps> = ({ draftQuestions = [], dr
                   <h4 className="text-xl font-black text-unidata-blue mb-4 group-hover:text-unidata-green transition-colors">{s.title}</h4>
                   <p className="text-xs text-gray-500 mb-6 line-clamp-2">This study targets {s.target_states.join(', ') || 'Nationwide'} respondents.</p>
                   <div className="flex gap-4">
-                    <button className="flex-grow bg-unidata-blue text-white py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-unidata-darkBlue transition-all">
+                    <a href={`#/s/${s.share_slug}`} className="flex-grow text-center bg-unidata-blue text-white py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-unidata-darkBlue transition-all">
                       Start Survey
-                    </button>
+                    </a>
                     <button className="w-12 h-12 flex items-center justify-center rounded-2xl border border-gray-100 text-gray-400 hover:text-unidata-blue transition-all">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" strokeWidth={2}/></svg>
                     </button>

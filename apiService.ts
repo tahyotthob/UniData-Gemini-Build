@@ -1,6 +1,6 @@
 
 import { supabase } from './supabaseClient';
-import { UserProfile, SurveyCampaign } from './types';
+import { UserProfile, SurveyCampaign, SurveyQuestion, PublicSurvey, SurveyAnswer } from './types';
 
 const rowToProfile = (row: any): UserProfile => ({
   id: row.id,
@@ -65,10 +65,62 @@ export const createCampaign = async (campaign: Partial<SurveyCampaign>) => {
   if (!authUser) throw new Error('Please sign in first.');
   const { data, error } = await supabase
     .from('campaigns')
-    .insert([{ ...campaign, researcher_id: authUser.id }]);
+    .insert([{ ...campaign, researcher_id: authUser.id }])
+    .select('id, share_slug')
+    .single();
 
   if (error) throw error;
-  return data;
+  return data as { id: string; share_slug: string };
+};
+
+/** The signed-in researcher's campaigns with response counts (RLS limits this to their own). */
+export const fetchMyCampaigns = async (): Promise<SurveyCampaign[]> => {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('id, title, share_slug, status, created_at, responses(count)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map((row: any) => ({
+    ...row,
+    response_count: row.responses?.[0]?.count ?? 0
+  })) as SurveyCampaign[];
+};
+
+export const setCampaignStatus = async (id: string, status: 'open' | 'closed') => {
+  const { error } = await supabase.from('campaigns').update({ status }).eq('id', id);
+  if (error) throw error;
+};
+
+/** Public: loads a survey by its share slug (no login needed). */
+export const fetchPublicSurvey = async (slug: string): Promise<PublicSurvey | null> => {
+  const { data, error } = await supabase.rpc('get_public_survey', { p_slug: slug });
+  if (error) throw error;
+  return (data && data[0]) || null;
+};
+
+/** Public: submits answers. Anonymous respondents are de-duplicated by a per-browser token. */
+export const submitSurveyResponse = async (slug: string, answers: SurveyAnswer[]) => {
+  let token = '';
+  try {
+    token = localStorage.getItem('unidata_respondent_token') || '';
+    if (!token) {
+      token = crypto.randomUUID();
+      localStorage.setItem('unidata_respondent_token', token);
+    }
+  } catch { token = crypto.randomUUID(); }
+  const { error } = await supabase.rpc('submit_response', { p_slug: slug, p_token: token, p_answers: answers });
+  if (error) throw error;
+};
+
+/** Researcher: downloads responses of one of their campaigns as rows (RLS-protected). */
+export const fetchResponses = async (campaignId: string) => {
+  const { data, error } = await supabase
+    .from('responses')
+    .select('answers, created_at')
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []) as { answers: SurveyAnswer[]; created_at: string }[];
 };
 
 /** Matching is done in SQL (matched_campaigns) so respondents never download campaigns they aren't targeted by. */
@@ -83,4 +135,11 @@ export const fetchAllProfiles = async (): Promise<UserProfile[]> => {
   const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
   if (error) throw error;
   return (data || []).map(rowToProfile);
+};
+
+/** Researcher: question texts of one of their campaigns (for CSV headers). */
+export const fetchMyCampaignQuestions = async (campaignId: string): Promise<string[]> => {
+  const { data, error } = await supabase.from('campaigns').select('questions').eq('id', campaignId).single();
+  if (error) throw error;
+  return ((data?.questions || []) as SurveyQuestion[]).map(q => q.question);
 };

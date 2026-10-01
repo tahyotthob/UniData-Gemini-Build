@@ -9,6 +9,7 @@ import AiDemo from './components/AiDemo';
 import Waitlist from './components/Waitlist';
 import Footer from './components/Footer';
 import AdminDashboard from './components/AdminDashboard';
+import SurveyPage from './components/SurveyPage';
 import { AuthProvider } from './components/AuthContext';
 import AuthModal from './components/AuthModal';
 import { Testimonial } from './types';
@@ -46,9 +47,11 @@ const TESTIMONIALS_DATA: Testimonial[] = [
 
 const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [hash, setHash] = useState(window.location.hash);
 
   useEffect(() => {
     const handleHash = () => {
+      setHash(window.location.hash);
       if (window.location.hash === '#admin') {
         setIsAdminOpen(true);
       }
@@ -57,6 +60,10 @@ const App: React.FC = () => {
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
+
+  // Public survey links (#/s/<slug>) render a standalone respondent page.
+  const surveyMatch = hash.match(/^#\/s\/([A-Za-z0-9_-]+)$/);
+  if (surveyMatch) return <SurveyPage slug={surveyMatch[1]} />;
 
   return (
     <AuthProvider>
