@@ -16,15 +16,23 @@ language sql stable security definer set search_path = public
 as $$
   select exists (select 1 from public.admins a where lower(a.email) = lower(auth.jwt() ->> 'email'));
 $$;
-revoke all on function public.is_admin() from public;
+revoke all on function public.is_admin() from public, anon;
 grant execute on function public.is_admin() to authenticated;
 
 -- 2. profiles: each user reads/writes only their own row (matched on verified JWT email).
 alter table public.profiles enable row level security;
-drop policy if exists "profiles_select_own" on public.profiles;
-drop policy if exists "profiles_insert_own" on public.profiles;
-drop policy if exists "profiles_update_own" on public.profiles;
-drop policy if exists "profiles_admin_select" on public.profiles;
+
+-- Remove every pre-existing policy first (the original project had wide-open ones such as
+-- "Allow All" using (true), which would otherwise override the restrictive policies below).
+do $$
+declare r record;
+begin
+  for r in select policyname, tablename from pg_policies
+           where schemaname = 'public' and tablename in ('profiles', 'campaigns')
+  loop
+    execute format('drop policy %I on public.%I', r.policyname, r.tablename);
+  end loop;
+end $$;
 
 create policy "profiles_select_own" on public.profiles for select to authenticated
   using (lower(email) = lower(auth.jwt() ->> 'email'));
@@ -68,5 +76,9 @@ as $$
     and (coalesce(cardinality(c.target_age_ranges), 0) = 0  or p.age_range = any (c.target_age_ranges))
   order by c.created_at desc;
 $$;
-revoke all on function public.matched_campaigns() from public;
+revoke all on function public.matched_campaigns() from public, anon;
 grant execute on function public.matched_campaigns() to authenticated;
+
+-- 5. Defense in depth: signed-out visitors (anon key) get no direct table access at all.
+revoke all on public.profiles from anon;
+revoke all on public.campaigns from anon;

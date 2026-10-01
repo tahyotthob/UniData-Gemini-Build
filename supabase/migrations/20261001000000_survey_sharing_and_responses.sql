@@ -28,6 +28,7 @@ create table if not exists public.responses (
 create index if not exists responses_campaign_idx on public.responses (campaign_id, created_at desc);
 
 alter table public.responses enable row level security;
+revoke all on public.responses from anon;
 drop policy if exists "responses_select_campaign_owner" on public.responses;
 create policy "responses_select_campaign_owner" on public.responses for select to authenticated
   using (exists (select 1 from public.campaigns c where c.id = campaign_id and c.researcher_id = auth.uid()));
